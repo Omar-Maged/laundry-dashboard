@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Washing Machine Monitor</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    h1 { color: #333; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+    th { background-color: #f2f2f2; }
+    tr:nth-child(even) { background-color: #f9f9f9; }
+    .running { color: green; font-weight: bold; }
+    .idle { color: red; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>🧺 Laundry Room Dashboard</h1>
+  <table id="statusTable">
+    <thead>
+      <tr>
+        <th>Machine ID</th>
+        <th>Status</th>
+        <th>Last Updated</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    // ✅ Replace with your actual values
+    const SUPABASE_URL = 'https://xunskbbwrmisbjajsqxt.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1bnNrYmJ3cm1pc2JqYWpzcXh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY4NzI5MTcsImV4cCI6MjA2MjQ0ODkxN30.DKzCAFhoZQGiYx1xbDkxBu3_8rrW68FFwh-8VjQ1raA'; // Replace this
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+
+    async function fetchStatus() {
+      const { data, error } = await supabase
+        .from('machine_status')
+        .select('*')
+        .order('timestamp', { ascending: false });
+
+      if (error) {
+        console.error("❌ Fetch error:", error.message);
+        return;
+      }
+
+      const tableBody = document.querySelector('#statusTable tbody');
+      tableBody.innerHTML = '';
+
+      // Show latest status per machine
+      const latestPerMachine = {};
+      data.forEach(row => {
+        if (!latestPerMachine[row.machine_id]) {
+          latestPerMachine[row.machine_id] = row;
+        }
+      });
+
+      Object.values(latestPerMachine).forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${row.machine_id}</td>
+          <td class="${row.status === 'RUNNING' ? 'running' : 'idle'}">${row.status}</td>
+          <td>${new Date(row.timestamp).toLocaleString()}</td>
+        `;
+        tableBody.appendChild(tr);
+      });
+    }
+
+    // First load
+    fetchStatus();
+
+    // Refresh every 10 seconds
+    setInterval(fetchStatus, 10000);
+  </script>
+</body>
+</html>
